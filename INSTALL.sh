@@ -30,6 +30,7 @@ while getopts ":lf" options; do
             exit 1;;
     esac
 done
+shift $(($OPTIND - 1))
 
 # Full system path to the directory containing this file, with trailing slash.
 # This line determines the location of the script even when called from a bash
@@ -50,6 +51,7 @@ if [[ ! -d "$KIMAI_DIRECTORY_PATH" ]]; then
 fi
 
 cd $mydir;
+# If -f is not specified, test for existing files, and fail with error if any are found.
 if [[ "$FORCE" != "1" ]]; then
   for f in $(find -type f -path "*/*/*" -not -path '*/\.git/*' -not -path '*/\nbproject/*'); do 
     if [[ -f "$KIMAI_DIRECTORY_PATH/$f" ]]; then
@@ -59,15 +61,15 @@ if [[ "$FORCE" != "1" ]]; then
   done
 fi
 
-
+# For all relevant files, remove any existing and then copy/link to target directory.
 for f in $(find -type f -path "*/*/*" -not -path '*/\.git/*' -not -path '*/\nbproject/*'); do 
-  rm "$KIMAI_DIRECTORY_PATH/$f";
+  rm -f "$KIMAI_DIRECTORY_PATH/$f";
   if [[ "$LINK" == "1" ]]; then
     >&2 echo "Linking $f..."
     cp --parents -l $f $KIMAI_DIRECTORY_PATH;
   else
     >&2 echo "Copying $f..."
-    cp --parents $f $KIMAI_DIRECTORY_PATH;
+    cp --parents -n $f $KIMAI_DIRECTORY_PATH;
   fi
 done
 
