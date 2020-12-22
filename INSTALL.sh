@@ -50,10 +50,23 @@ if [[ ! -d "$KIMAI_DIRECTORY_PATH" ]]; then
   exit 1;
 fi
 
+cd $KIMAI_DIRECTORY_PATH;
+# Ensure target dir is git-tracked.
+if ! git ls-files index.php; then
+  >&2 echo "$KIMAI_DIRECTORY_PATH is not tracked in a git repo. Exiting.";
+  exit 1;
+fi
+
+# Ensure target has no modified git-tracked files.
+if [[ -n $(git -C $KIMAI_DIRECTORY_PATH diff-index HEAD) ]]; then
+  >&2 echo "$KIMAI_DIRECTORY_PATH git repo has modified tracked files. Exiting.";
+  exit 1;
+fi
+
 cd $mydir;
 # If -f is not specified, test for existing files, and fail with error if any are found.
 if [[ "$FORCE" != "1" ]]; then
-  for f in $(find -type f -path "*/*/*" -not -path '*/\.git/*' -not -path '*/\nbproject/*'); do 
+  for f in $(find -type f -path "*/*/*" -not -path '*/\.git/*' -not -path '*/\nbproject/*'); do
     if [[ -f "$KIMAI_DIRECTORY_PATH/$f" ]]; then
       >&2 echo "File $KIMAI_DIRECTORY_PATH/$f exists, but -f not specified; exiting."
       exit 1;
@@ -62,14 +75,19 @@ if [[ "$FORCE" != "1" ]]; then
 fi
 
 # For all relevant files, remove any existing and then copy/link to target directory.
-for f in $(find -type f -path "*/*/*" -not -path '*/\.git/*' -not -path '*/\nbproject/*'); do 
+for f in $(find -type f -path "*/*/*" -not -path '*/\.git/*' -not -path '*/\nbproject/*'); do
   rm -f "$KIMAI_DIRECTORY_PATH/$f";
   if [[ "$LINK" == "1" ]]; then
     >&2 echo "Linking $f..."
-    cp --parents -l $f $KIMAI_DIRECTORY_PATH;
+    if ! cp --parents -l $f $KIMAI_DIRECTORY_PATH; then
+      >&2 echo "Linking failed. Exiting.";
+      exit 1;
+    fi
   else
     >&2 echo "Copying $f..."
-    cp --parents -n $f $KIMAI_DIRECTORY_PATH;
+    if ! cp --parents -n $f $KIMAI_DIRECTORY_PATH; then
+      >&2 echo "Copying failed. Exiting.";
+    fi
   fi
 done
 
