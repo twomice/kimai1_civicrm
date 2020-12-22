@@ -1,8 +1,13 @@
 <?php
 /**
- * This file is part of
+ * This file is copied-and-modified from
  * Kimai - Open Source Time Tracking // https://www.kimai.org
  * (c) 2006-2009 Kimai-Development-Team
+ *
+ * Compare to original file: [kimai]/core/json.php
+ *
+ * CHANGES NOTED WITH COMMENT:
+ * // CHANGED FOR kimai1_civicrm
  *
  * Kimai is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +38,7 @@ require __DIR__ . '/../includes/basics.php';
 header('Access-Control-Allow-Origin: *');
 
 $server = new Zend_Json_Server();
+// CHANGED FOR kimai1_civicrm:
 $server->setClass('Kimai_Remote_Api_Civicrm');
 
 if ('GET' === $_SERVER['REQUEST_METHOD']) {
