@@ -89,6 +89,7 @@ for f in $(find -type f -path "*/*/*" -not -path '*/\.git/*' -not -path '*/\nbpr
     >&2 echo "Copying $f..."
     if ! cp --parents -n $f $KIMAI_DIRECTORY_PATH; then
       >&2 echo "ERROR: Copying failed. Exiting.";
+      exit 1;
     fi
   fi
 done
