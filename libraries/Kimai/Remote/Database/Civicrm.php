@@ -18,54 +18,57 @@
 /**
  * Extends Kimai_Remote_Database as needed to provide more methods for kimai1-civicrm APIs.
  */
-class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database {
+class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
+{
 
-  /**
-   * @var Kimai_Config|null
-   */
-  private $kga = null;
+    /**
+     * @var Kimai_Config|null
+     */
+    private $kga = null;
 
-  /**
-   * @var string
-   */
-  private $tablePrefix = null;
+    /**
+     * @var string
+     */
+    private $tablePrefix = null;
 
-  /**
-   * @var Kimai_Database_Mysql
-   */
-  private $dbLayer = null;
+    /**
+     * @var Kimai_Database_Mysql
+     */
+    private $dbLayer = null;
 
-  /**
-   * @var MySQL
-   */
-  private $conn = null;
+    /**
+     * @var MySQL
+     */
+    private $conn = null;
 
-  /**
-   * Kimai_Remote_Database constructor.
-   * @param Kimai_Config $kga
-   * @param Kimai_Database_Mysql $database
-   */
-  public function __construct($kga, $database) {
-    $this->kga = $kga;
-    $this->dbLayer = $database;
-    $this->tablePrefix = $this->dbLayer->getTablePrefix();
-    $this->conn = $this->dbLayer->getConnectionHandler();
+    /**
+     * Kimai_Remote_Database constructor.
+     * @param Kimai_Config $kga
+     * @param Kimai_Database_Mysql $database
+     */
+    public function __construct($kga, $database)
+    {
+        $this->kga = $kga;
+        $this->dbLayer = $database;
+        $this->tablePrefix = $this->dbLayer->getTablePrefix();
+        $this->conn = $this->dbLayer->getConnectionHandler();
 
-    return parent::__construct($kga, $database);
-  }
+        return parent::__construct($kga, $database);
+    }
 
-  /**
-   * create exp entry
-   *
-   * @param array $data
-   * @return int
-   */
-  public function doPrimeUpdates() {
-    $query = 'select database()';
+    /**
+     * create exp entry
+     *
+     * @param array $data
+     * @return int
+     */
+    public function doPrimeUpdates()
+    {
+        $query = 'select database()';
 
-    $this->conn->Query($query);
+        $this->conn->Query($query);
 
-    return $this->conn->RowArray(0, MYSQLI_ASSOC);
-  }
+        return $this->conn->RowArray(0, MYSQLI_ASSOC);
+    }
 
 }
