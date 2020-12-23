@@ -6,7 +6,7 @@
 function usage() {
     echo "$0: copy relevant files from Kimai installation to this project; use with caution."
     echo ""
-    echo "usage: $0 [-l] [-f] KIMAI_DIRECTORY_PATH"
+    echo "usage: $0 KIMAI_DIRECTORY_PATH"
     echo "    KIMAI_DIRECTORY_PATH: full system path to directory containing Kimai's index.php"
 }
 
