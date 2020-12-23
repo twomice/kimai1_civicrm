@@ -21,11 +21,9 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
     /**
      *
      * @param type $apiKey
-     * @param type $projectIds
-     * @param type $minTimestamp
-     * @param type $limit
+     * @param type $limit Maximum number of returned queue messages.
      */
-    public function getUpdates($apiKey, $projectIds, $minTimestamp, $limit = 25)
+    public function getUpdates($apiKey, $limit = 25)
     {
 
     }
