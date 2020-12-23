@@ -4,6 +4,8 @@
 # https://google.github.io/styleguide/shell.xml
 
 function usage() {
+    echo "$0: install files from this project into an active Kimai installation."
+    echo ""
     echo "usage: $0 [-l] [-f] KIMAI_DIRECTORY_PATH"
     echo "    KIMAI_DIRECTORY_PATH: full system path to directory containing Kimai's index.php"
     echo "    -l : link; create hard-links instead of file copies; recommended for development."
@@ -46,20 +48,20 @@ fi
 
 KIMAI_DIRECTORY_PATH=$1;
 if [[ ! -d "$KIMAI_DIRECTORY_PATH" ]]; then
-  >&2 echo "KIMAI_DIRECTORY_PATH $KIMAI_DIRECTORY_PATH is not a directory. Exiting.";
+  >&2 echo "ERROR: KIMAI_DIRECTORY_PATH $KIMAI_DIRECTORY_PATH is not a directory. Exiting.";
   exit 1;
 fi
 
 cd $KIMAI_DIRECTORY_PATH;
 # Ensure target dir is git-tracked.
 if ! git ls-files index.php; then
-  >&2 echo "$KIMAI_DIRECTORY_PATH is not tracked in a git repo. Exiting.";
+  >&2 echo "ERROR: $KIMAI_DIRECTORY_PATH is not tracked in a git repo. Exiting.";
   exit 1;
 fi
 
 # Ensure target has no modified git-tracked files.
 if [[ -n $(git -C $KIMAI_DIRECTORY_PATH diff-index HEAD) ]]; then
-  >&2 echo "$KIMAI_DIRECTORY_PATH git repo has modified tracked files. Exiting.";
+  >&2 echo "ERROR: $KIMAI_DIRECTORY_PATH git repo has modified tracked files. Exiting.";
   exit 1;
 fi
 
@@ -68,7 +70,7 @@ cd $mydir;
 if [[ "$FORCE" != "1" ]]; then
   for f in $(find -type f -path "*/*/*" -not -path '*/\.git/*' -not -path '*/\nbproject/*'); do
     if [[ -f "$KIMAI_DIRECTORY_PATH/$f" ]]; then
-      >&2 echo "File $KIMAI_DIRECTORY_PATH/$f exists, but -f not specified; exiting."
+      >&2 echo "ERROR: File $KIMAI_DIRECTORY_PATH/$f exists, but -f not specified; exiting."
       exit 1;
     fi
   done
@@ -80,13 +82,13 @@ for f in $(find -type f -path "*/*/*" -not -path '*/\.git/*' -not -path '*/\nbpr
   if [[ "$LINK" == "1" ]]; then
     >&2 echo "Linking $f..."
     if ! cp --parents -l $f $KIMAI_DIRECTORY_PATH; then
-      >&2 echo "Linking failed. Exiting.";
+      >&2 echo "ERROR: Linking failed. Exiting.";
       exit 1;
     fi
   else
     >&2 echo "Copying $f..."
     if ! cp --parents -n $f $KIMAI_DIRECTORY_PATH; then
-      >&2 echo "Copying failed. Exiting.";
+      >&2 echo "ERROR: Copying failed. Exiting.";
     fi
   fi
 done
