@@ -34,7 +34,7 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
      * Make any required sql table alterations, skipping any that have already been done.
      * @param type $apiKey
      */
-    public function primeTables($apiKey)
+    public function primeUpdates($apiKey)
     {
 
     }
@@ -44,7 +44,7 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
      * @param type $apiKey
      * @param type $queueId
      */
-    public function updateQueue($apiKey, $queueId)
+    public function confirmQueueMessage($apiKey, $messageId)
     {
 
     }
