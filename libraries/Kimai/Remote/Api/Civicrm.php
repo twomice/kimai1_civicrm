@@ -17,6 +17,36 @@
 
 class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
 {
+    /**
+     * @var \Kimai_Remote_Database
+     */
+    private $backend = null;
+
+    /**
+     * @var array
+     */
+    private $user = null;
+
+    /**
+     * @var \Kimai_Config
+     */
+    private $kga = null;
+
+    /**
+     * @var Kimai_Database_Mysql
+     */
+    private $oldDatabase = null;
+
+    public function __construct()
+    {
+        $kga = Kimai_Registry::getConfig();
+        $database = Kimai_Registry::getDatabase();
+
+        // remember the most important stuff
+        $this->kga = $kga;
+        $this->backend = new Kimai_Remote_Database_Civicrm($kga, $database);
+        $this->oldDatabase = $database;
+    }
 
     /**
      *
@@ -34,7 +64,8 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
      */
     public function primeUpdates($apiKey)
     {
-
+      $row = $this->backend->doPrimeUpdates();
+      return $this->getSuccessResult($row);
     }
 
     /**
