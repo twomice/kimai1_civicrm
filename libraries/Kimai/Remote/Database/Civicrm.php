@@ -196,6 +196,7 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
             `approved` DECIMAL( 10, 2 ) NULL,
             `statusID` SMALLINT NOT NULL,
             `billable` TINYINT NULL,
+            `modified` timestamp NULL,
             INDEX ( `userID` ),
             INDEX ( `projectID` ),
             INDEX ( `activityID` )
@@ -218,7 +219,7 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
      */
     public function addColumnInTable($tableName, $columnName)
     {
-        $query = "ALTER TABLE {$tableName} ADD {$columnName} timestamp NULL";
+        $query = "ALTER TABLE {$tableName} ADD {$columnName} timestamp NULL ON UPDATE CURRENT_TIMESTAMP";
 
         $success = $this->conn->Query($query);
 
