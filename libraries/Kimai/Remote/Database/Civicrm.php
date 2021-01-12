@@ -230,4 +230,51 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
         return "$columnName is added as a column in $tableName";
     }
 
+    public function checkCivicrmTimesheetEverData()
+    {
+        $queryCheck = "SELECT * FROM {$this->getCivicrmTimesheetEver()}";
+        $this->conn->Query($queryCheck);
+
+        return $this->conn->RowArray(0, MYSQLI_ASSOC);
+    }
+
+    public function copyTimesheetData()
+    {
+        if (!$this->checkCivicrmTimesheetEverData()) {
+            $query = "INSERT INTO {$this->getCivicrmTimesheetEver()} (timeEntryID) SELECT timeEntryID FROM {$this->getTimeSheetTable()}";
+            $this->conn->Query($query);
+
+            return $this->conn->RowArray(0, MYSQLI_ASSOC);
+        } else {
+            //  statusID = 1 is open timesheet
+            $filter['statusID'] = MySQL::SQLValue(1, MySQL::SQLVALUE_NUMBER);
+            $timeSheetQuery = $this->conn->SelectRows($this->getTimeSheetTable(), $filter, 'timeEntryID');
+            $timeSheetData = $this->conn->RecordsArray(MYSQLI_ASSOC);
+
+            $civicrmTimesheetEverQuery = $this->conn->SelectRows($this->getCivicrmTimesheetEver(), NULL, 'timeEntryID');
+            $civicrmTimesheetEverData = $this->conn->RecordsArray(MYSQLI_ASSOC);
+
+            // Get new data
+            foreach ($timeSheetData as $key => $data) {
+                if (!in_array($data, $civicrmTimesheetEverData)) {
+                    $this->conn->InsertRow($this->getCivicrmTimesheetEver(), $timeSheetData[$key]);
+                }
+            }
+
+            // Get deleted data
+            foreach ($civicrmTimesheetEverData as $key => $data) {
+                if (!in_array($data, $timeSheetData)) {
+                    // $values['delete_timestamp'] = date('Y-m-d H:i:s');
+                    // $filter['timeEntryID'] = MySQL::SQLValue($data['timeEntryID'], MySQL::SQLVALUE_NUMBER);
+                    // $this->conn->UpdateRows($this->getCivicrmTimesheetEver(), $values, $filter);
+
+                    $query = "UPDATE {$this->getCivicrmTimesheetEver()} SET `delete_timestamp` = NOW() WHERE `timeEntryID` = {$data['timeEntryID']}";
+                    $this->conn->Query($query);
+                }
+            }
+
+            return $civicrmTimesheetEverData;
+        }
+    }
+
 }
