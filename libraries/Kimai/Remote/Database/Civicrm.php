@@ -230,6 +230,10 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
         return "$columnName is added as a column in $tableName";
     }
 
+    /**
+     * Check if server_prefix_civicrm_timesheet_ever has a value in its column
+     * @return array
+     */
     public function checkCivicrmTimesheetEverData()
     {
         $queryCheck = "SELECT * FROM {$this->getCivicrmTimesheetEver()}";
@@ -238,43 +242,98 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
         return $this->conn->RowArray(0, MYSQLI_ASSOC);
     }
 
-    public function copyTimesheetData()
+    /**
+     * Update server_prefix_civicrm_timesheet_ever to the changes in server_prefix_timesheet
+     * @return array
+     */
+    public function updateCivicrmTimesheetEver()
     {
+        // Check if server_prefix_civicrm_timesheet_ever has a value in its column
         if (!$this->checkCivicrmTimesheetEverData()) {
+            // Copy all data in server_prefix_timesheet to server_prefix_civicrm_timesheet_ever if there is no value
+            
             $query = "INSERT INTO {$this->getCivicrmTimesheetEver()} (timeEntryID) SELECT timeEntryID FROM {$this->getTimeSheetTable()}";
             $this->conn->Query($query);
 
-            return $this->conn->RowArray(0, MYSQLI_ASSOC);
+            return "{$this->getTimeSheetTable()} data has successfully copied in {$this->getCivicrmTimesheetEver()}";
         } else {
-            //  statusID = 1 is open timesheet
-            $filter['statusID'] = MySQL::SQLValue(1, MySQL::SQLVALUE_NUMBER);
-            $timeSheetQuery = $this->conn->SelectRows($this->getTimeSheetTable(), $filter, 'timeEntryID');
-            $timeSheetData = $this->conn->RecordsArray(MYSQLI_ASSOC);
+            $message = [];
+            // Update data in server_prefix_timesheet to server_prefix_civicrm_timesheet_ever if there is no value
+            // Filter new data
+            $newTimeSheet = "SELECT timeEntryID FROM {$this->getCivicrmTimesheetEver()}
+                UNION
+                SELECT timeEntryID FROM {$this->getTimeSheetTable()}
+                EXCEPT
+                SELECT timeEntryID FROM {$this->getCivicrmTimesheetEver()}";
 
-            $civicrmTimesheetEverQuery = $this->conn->SelectRows($this->getCivicrmTimesheetEver(), NULL, 'timeEntryID');
-            $civicrmTimesheetEverData = $this->conn->RecordsArray(MYSQLI_ASSOC);
+            $newtimeSheetQuery = $this->conn->Query($newTimeSheet);
+            $newtimeSheetData = $this->conn->RecordsArray(MYSQLI_ASSOC);
 
-            // Get new data
-            foreach ($timeSheetData as $key => $data) {
-                if (!in_array($data, $civicrmTimesheetEverData)) {
-                    $this->conn->InsertRow($this->getCivicrmTimesheetEver(), $timeSheetData[$key]);
+            // Filter deleted data
+            $deletedTimeSheet = "SELECT timeEntryID FROM {$this->getCivicrmTimesheetEver()}
+                UNION
+                SELECT timeEntryID FROM {$this->getTimeSheetTable()}
+                EXCEPT
+                SELECT timeEntryID FROM {$this->getTimeSheetTable()}";
+
+            $deletedTimeSheetQuery = $this->conn->Query($deletedTimeSheet);
+            $deletedTimeSheetData = $this->conn->RecordsArray(MYSQLI_ASSOC);
+
+            if ($newtimeSheetData) {
+                // Save new data
+                foreach ($newtimeSheetData as $key => $data) {
+                    $this->conn->InsertRow($this->getCivicrmTimesheetEver(), $newtimeSheetData[$key]);
                 }
+                $message['new_timesheet'] = "Successfully copied new timesheet from {$this->getTimeSheetTable()} to {$this->getCivicrmTimesheetEver()}";
             }
 
-            // Get deleted data
-            foreach ($civicrmTimesheetEverData as $key => $data) {
-                if (!in_array($data, $timeSheetData)) {
-                    // $values['delete_timestamp'] = date('Y-m-d H:i:s');
-                    // $filter['timeEntryID'] = MySQL::SQLValue($data['timeEntryID'], MySQL::SQLVALUE_NUMBER);
-                    // $this->conn->UpdateRows($this->getCivicrmTimesheetEver(), $values, $filter);
-
+            if ($deletedTimeSheetData) {
+                // Update deleted data
+                foreach ($deletedTimeSheetData as $key => $data) {
                     $query = "UPDATE {$this->getCivicrmTimesheetEver()} SET `delete_timestamp` = NOW() WHERE `timeEntryID` = {$data['timeEntryID']}";
                     $this->conn->Query($query);
                 }
+                $message['deleted_timesheet'] = "Successfully updated delete timesheet in {$this->getCivicrmTimesheetEver()}";
             }
 
-            return $civicrmTimesheetEverData;
+            if (!$message) {
+                $message['no_updated_timesheet'] = "There is no current updated data in {$this->getTimeSheetTable()}";
+            }
+
+            return $message;
         }
+    }
+
+    /**
+     * Queued newly created timesheet in server_prefix_civicrm_queue
+     * @param $timeEntryID
+     * @return array
+     */
+    public function newQueuedTimesheet($timeEntryID)
+    {
+
+    }
+
+    /**
+     * Queued deleted timesheet in server_prefix_civicrm_queue
+     * @param $timeEntryID
+     * @return array
+     */
+    public function deleteQueuedTimesheet($timeEntryID)
+    {
+
+    }
+
+    /**
+     * Get the latest modified value in server_prefix_civicrm_queue
+     * @return int
+     */
+    public function queueCutoff()
+    {
+        $this->conn->Query("SELECT IFNULL(MAX(modified), 0) AS queueCutoff FROM {$this->getCivicrmQueue()}");
+        $queueCutoff = $this->conn->RowArray(0, MYSQLI_ASSOC);
+
+        return $queueCutoff['queueCutoff'];
     }
 
 }

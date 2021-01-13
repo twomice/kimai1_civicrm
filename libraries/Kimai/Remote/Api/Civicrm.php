@@ -55,7 +55,7 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
      */
     public function getUpdates($apiKey, $limit = 25)
     {
-        $row = $this->backend->copyTimesheetData();
+        $row = $this->backend->updateCivicrmTimesheetEver();
         return $this->getSuccessResult($row);
     }
 
