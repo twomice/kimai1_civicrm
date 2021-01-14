@@ -55,7 +55,7 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
      */
     public function getUpdates($apiKey, $limit = 25)
     {
-        $row = $this->backend->updateCivicrmTimesheetEver();
+        $row = $this->backend->doGetUpdates($limit);
         return $this->getSuccessResult($row);
     }
 
@@ -65,9 +65,9 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
      */
     public function primeUpdates($apiKey)
     {
-        if (!$this->init($apiKey, 'primeUpdates')) {
-            return $this->getAuthErrorResult();
-        }
+        // if (!$this->init($apiKey, 'primeUpdates')) {
+        //     return $this->getAuthErrorResult();
+        // }
 
         $row = $this->backend->doPrimeUpdates();
         return $this->getSuccessResult($row);

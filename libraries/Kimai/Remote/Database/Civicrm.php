@@ -178,23 +178,23 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
             `confirmed` timestamp NULL DEFAULT NULL COMMENT 'NULL if never confirmed, or timestamp when message was confirmed as received and processed by civicrm.',
             `action` text NOT NULL COMMENT 'update or delete',
             `timeEntryID` int(10) NOT NULL,
-            `start` int(10) NOT NULL default '0',
-            `end` int(10) NOT NULL default '0',
-            `duration` int(6) NOT NULL default '0',
-            `userID` int(10) NOT NULL,
-            `projectID` int(10) NOT NULL,
-            `activityID` int(10) NOT NULL,
+            `start` int(10) NULL default '0',
+            `end` int(10) NULL default '0',
+            `duration` int(6) NULL default '0',
+            `userID` int(10) NULL,
+            `projectID` int(10) NULL,
+            `activityID` int(10) NULL,
             `description` TEXT CHARACTER SET utf8 COLLATE utf8_unicode_ci NULL,
             `comment` TEXT NULL DEFAULT NULL,
-            `commentType` TINYINT(1) NOT NULL DEFAULT '0',
-            `cleared` TINYINT(1) NOT NULL DEFAULT '0',
+            `commentType` TINYINT(1) NULL DEFAULT '0',
+            `cleared` TINYINT(1) NULL DEFAULT '0',
             `location` VARCHAR(50),
             `trackingNumber` varchar(30),
-            `rate` DECIMAL( 10, 2 ) NOT NULL DEFAULT '0',
+            `rate` DECIMAL( 10, 2 ) NULL DEFAULT '0',
             `fixedRate` DECIMAL( 10, 2 ) DEFAULT NULL,
             `budget` DECIMAL( 10, 2 ) NULL,
             `approved` DECIMAL( 10, 2 ) NULL,
-            `statusID` SMALLINT NOT NULL,
+            `statusID` SMALLINT NULL,
             `billable` TINYINT NULL,
             `modified` timestamp NULL,
             INDEX ( `userID` ),
@@ -231,33 +231,24 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
     }
 
     /**
-     * Check if server_prefix_civicrm_timesheet_ever has a value in its column
-     * @return array
-     */
-    public function checkCivicrmTimesheetEverData()
-    {
-        $queryCheck = "SELECT * FROM {$this->getCivicrmTimesheetEver()}";
-        $this->conn->Query($queryCheck);
-
-        return $this->conn->RowArray(0, MYSQLI_ASSOC);
-    }
-
-    /**
      * Update server_prefix_civicrm_timesheet_ever to the changes in server_prefix_timesheet
      * @return array
      */
-    public function updateCivicrmTimesheetEver()
+    public function doGetUpdates($limit)
     {
         // Check if server_prefix_civicrm_timesheet_ever has a value in its column
         if (!$this->checkCivicrmTimesheetEverData()) {
             // Copy all data in server_prefix_timesheet to server_prefix_civicrm_timesheet_ever if there is no value
-            
             $query = "INSERT INTO {$this->getCivicrmTimesheetEver()} (timeEntryID) SELECT timeEntryID FROM {$this->getTimeSheetTable()}";
             $this->conn->Query($query);
 
             return "{$this->getTimeSheetTable()} data has successfully copied in {$this->getCivicrmTimesheetEver()}";
         } else {
-            $message = [];
+            // Get the latest modified value in server_prefix_civicrm_queue
+            $cutoffQuery = "SELECT IFNULL (MAX(modified), 0) AS queueCutoff FROM {$this->getCivicrmQueue()}";
+            $this->conn->Query($cutoffQuery);
+            $queueCutoff = $this->conn->RowArray(0, MYSQLI_ASSOC);
+
             // Update data in server_prefix_timesheet to server_prefix_civicrm_timesheet_ever if there is no value
             // Filter new data
             $newTimeSheet = "SELECT timeEntryID FROM {$this->getCivicrmTimesheetEver()}
@@ -284,7 +275,8 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
                 foreach ($newtimeSheetData as $key => $data) {
                     $this->conn->InsertRow($this->getCivicrmTimesheetEver(), $newtimeSheetData[$key]);
                 }
-                $message['new_timesheet'] = "Successfully copied new timesheet from {$this->getTimeSheetTable()} to {$this->getCivicrmTimesheetEver()}";
+                // Add newly updated data to server_prefix_civicrm_queue and from server_prefix_timesheet
+                $this->addQueueNewTimesheet($queueCutoff['queueCutoff']);
             }
 
             if ($deletedTimeSheetData) {
@@ -293,47 +285,68 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
                     $query = "UPDATE {$this->getCivicrmTimesheetEver()} SET `delete_timestamp` = NOW() WHERE `timeEntryID` = {$data['timeEntryID']}";
                     $this->conn->Query($query);
                 }
-                $message['deleted_timesheet'] = "Successfully updated delete timesheet in {$this->getCivicrmTimesheetEver()}";
+                // Add deleted data to server_prefix_civicrm_queue and delete it in server_prefix_civicrm_timesheet_ever
+                $this->addQueueDeletedTimesheet($queueCutoff['queueCutoff']);
             }
 
-            if (!$message) {
-                $message['no_updated_timesheet'] = "There is no current updated data in {$this->getTimeSheetTable()}";
-            }
-
-            return $message;
+            return $this->getQueuedData($limit);
         }
     }
 
     /**
-     * Queued newly created timesheet in server_prefix_civicrm_queue
-     * @param $timeEntryID
+     * Check if server_prefix_civicrm_timesheet_ever has a value in its column
      * @return array
      */
-    public function newQueuedTimesheet($timeEntryID)
+    public function checkCivicrmTimesheetEverData()
     {
+        $queryCheck = "SELECT * FROM {$this->getCivicrmTimesheetEver()}";
+        $this->conn->Query($queryCheck);
 
+        return $this->conn->RowArray(0, MYSQLI_ASSOC);
+    }
+
+    /**
+     * Queued newly created timesheet in server_prefix_civicrm_queue
+     * @param $queueCutoff
+     */
+    public function addQueueNewTimesheet($queueCutoff)
+    {
+        $query = "INSERT INTO `{$this->getCivicrmQueue()}` (action, timeEntryID, start, end, duration, userID, projectID, activityID, description, comment, commentType, cleared, location, trackingNumber, rate, fixedRate, budget, approved, statusID, billable, modified)
+            SELECT 'update', timeEntryID, start, end, duration, userID, projectID, activityID, description, comment, commentType, cleared, location, trackingNumber, rate, fixedRate, budget, approved, statusID, billable, modified
+            FROM {$this->getTimeSheetTable()}
+            WHERE `modified` > '{$queueCutoff}'";
+
+        $this->conn->Query($query);
     }
 
     /**
      * Queued deleted timesheet in server_prefix_civicrm_queue
-     * @param $timeEntryID
-     * @return array
+     * @param $queueCutoff
      */
-    public function deleteQueuedTimesheet($timeEntryID)
+    public function addQueueDeletedTimesheet($queueCutoff)
     {
+        // Copy all deleted timesheet from server_prefix_civicrm_timesheet_ever to server_prefix_civicrm_queue
+        $query = "INSERT INTO `{$this->getCivicrmQueue()}` (timeEntryID, action, modified) 
+            SELECT timeEntryID, 'delete', delete_timestamp 
+            FROM {$this->getCivicrmTimesheetEver()} 
+            WHERE `delete_timestamp` > '{$queueCutoff}'";
+        $this->conn->Query($query);
 
+        // Delete data in server_prefix_civicrm_timesheet_ever after adding it in to server_prefix_civicrm_queue
+        $deleteQuery = "DELETE FROM {$this->getCivicrmTimesheetEver()} WHERE `delete_timestamp` > '{$queueCutoff}'";
+        $this->conn->Query($deleteQuery);
     }
 
     /**
-     * Get the latest modified value in server_prefix_civicrm_queue
-     * @return int
+     * Queued deleted timesheet in server_prefix_civicrm_queue
+     * @param $queueCutoff
+     * @return array of queued timesheet
      */
-    public function queueCutoff()
+    public function getQueuedData($limit)
     {
-        $this->conn->Query("SELECT IFNULL(MAX(modified), 0) AS queueCutoff FROM {$this->getCivicrmQueue()}");
-        $queueCutoff = $this->conn->RowArray(0, MYSQLI_ASSOC);
+        $query = "SELECT * FROM `{$this->getCivicrmQueue()}` WHERE `confirmed` IS NULL ORDER BY modified DESC LIMIT {$limit}";
+        $this->conn->Query($query);
 
-        return $queueCutoff['queueCutoff'];
+        return $this->conn->RecordsArray(MYSQLI_ASSOC);
     }
-
 }
