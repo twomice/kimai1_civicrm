@@ -346,7 +346,13 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
     {
         $query = "SELECT * FROM `{$this->getCivicrmQueue()}` WHERE `confirmed` IS NULL ORDER BY modified DESC LIMIT {$limit}";
         $this->conn->Query($query);
+        $queuedData['queued_data'] = $this->conn->RecordsArray(MYSQLI_ASSOC);
 
-        return $this->conn->RecordsArray(MYSQLI_ASSOC);
+        // return false if there is no queued data found
+        if (!$queuedData) {
+            $queuedData['queued_data'] = 0;
+        }
+
+        return $queuedData;
     }
 }
