@@ -277,8 +277,6 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
                 foreach ($newtimeSheetData as $key => $data) {
                     $this->conn->InsertRow($this->getCivicrmTimesheetEver(), $newtimeSheetData[$key]);
                 }
-                // Add newly updated data to server_prefix_civicrm_queue and from server_prefix_timesheet
-                $this->addQueueNewTimesheet($queueCutoff['queueCutoff']);
             }
 
             if ($deletedTimeSheetData) {
@@ -287,9 +285,12 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
                     $query = "UPDATE {$this->getCivicrmTimesheetEver()} SET `delete_timestamp` = NOW() WHERE `timeEntryID` = {$data['timeEntryID']}";
                     $this->conn->Query($query);
                 }
-                // Add deleted data to server_prefix_civicrm_queue and delete it in server_prefix_civicrm_timesheet_ever
-                $this->addQueueDeletedTimesheet($queueCutoff['queueCutoff']);
             }
+
+            // Add newly updated data to server_prefix_civicrm_queue and from server_prefix_timesheet
+            $this->addQueueNewTimesheet($queueCutoff['queueCutoff']);
+            // Add deleted data to server_prefix_civicrm_queue and delete it in server_prefix_civicrm_timesheet_ever
+            $this->addQueueDeletedTimesheet($queueCutoff['queueCutoff']);
 
             return $this->getQueuedData($limit);
         }
@@ -356,5 +357,13 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
         }
 
         return $queuedData;
+    }
+
+    public function doConfirmQueueMessage($queuedID) {
+        $confirmedQueue = "UPDATE `{$this->getCivicrmQueue()}` SET `confirmed` = NOW() WHERE `id` = {$queuedID}";
+        $updateConfirm = $this->conn->Query($confirmedQueue);
+        $message['confirm'] = "Successfully updated `confirmed` column in {$this->getCivicrmQueue()} table";
+
+        return $message;
     }
 }
