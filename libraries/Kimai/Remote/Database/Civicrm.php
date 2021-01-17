@@ -242,7 +242,9 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
             $query = "INSERT INTO {$this->getCivicrmTimesheetEver()} (timeEntryID) SELECT timeEntryID FROM {$this->getTimeSheetTable()}";
             $this->conn->Query($query);
 
-            return "{$this->getTimeSheetTable()} data has successfully copied in {$this->getCivicrmTimesheetEver()}";
+            $message['success'] = "{$this->getTimeSheetTable()} data has successfully copied in {$this->getCivicrmTimesheetEver()}";
+
+            return $message;
         } else {
             // Get the latest modified value in server_prefix_civicrm_queue
             $cutoffQuery = "SELECT IFNULL (MAX(modified), 0) AS queueCutoff FROM {$this->getCivicrmQueue()}";
