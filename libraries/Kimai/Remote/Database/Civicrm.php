@@ -360,6 +360,14 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
     }
 
     public function doConfirmQueueMessage($queuedID) {
+        $queuedDataQuery = "SELECT * FROM `{$this->getCivicrmQueue()}` WHERE `id` = {$queuedID}";
+        $this->conn->Query($queuedDataQuery);
+        $checkQueuedData = $this->conn->RowArray(0, MYSQLI_ASSOC);
+
+        if (!$checkQueuedData) {
+            return 0;
+        }
+
         $confirmedQueue = "UPDATE `{$this->getCivicrmQueue()}` SET `confirmed` = NOW() WHERE `id` = {$queuedID}";
         $updateConfirm = $this->conn->Query($confirmedQueue);
         $message['confirm'] = "Successfully updated `confirmed` column in {$this->getCivicrmQueue()} table";
