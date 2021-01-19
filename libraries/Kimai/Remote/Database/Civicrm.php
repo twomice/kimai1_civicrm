@@ -242,8 +242,8 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
             $query = "INSERT INTO {$this->getCivicrmTimesheetEver()} (timeEntryID) SELECT timeEntryID FROM {$this->getTimeSheetTable()}";
             $this->conn->Query($query);
 
-            // Mark server_prefix_timesheet data modified as the latest for it to be queued
-            $queryTimesheet = "UPDATE {$this->getTimeSheetTable()} SET `modified` = NOW() WHERE `modified` = NULL";
+            // Mark server_prefix_timesheet existing data modified as the latest for it to be queued
+            $queryTimesheet = "UPDATE {$this->getTimeSheetTable()} SET `modified` = NOW()";
             $this->conn->Query($queryTimesheet);
         }
 
