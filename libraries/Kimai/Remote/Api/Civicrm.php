@@ -49,15 +49,43 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
     }
 
     /**
+     * Overrides parent::init() which is private and makes our life hard.
+     */
+    private function init($apiKey, $permission = null, $allowCustomer = false)
+    {
+        if ($this->backend === null) {
+            return false;
+        }
+
+        $uName = $this->backend->getUserByApiKey($apiKey);
+        if ($uName === null || $uName === false) {
+            return false;
+        }
+
+        $this->user = $this->backend->checkUserInternal($uName);
+
+        if ($permission !== null) {
+            // if we ever want to check permissions!
+        }
+
+        // do not let customers access the SOAP API
+        if ($this->user === null || (!$allowCustomer && isset($this->kga['customer']))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      *
      * @param type $apiKey
      * @param type $limit Maximum number of returned queue messages.
      */
     public function getUpdates($apiKey, $limit = 25)
     {
-        // if (!$this->init($apiKey, 'getUpdates')) {
-        //     return $this->getAuthErrorResult();
-        // }
+        if (!$this->init($apiKey, 'getUpdates')) {
+            return $this->getAuthErrorResult();
+        }
 
         $row = $this->backend->doGetUpdates($limit);
         return $this->getSuccessResult($row);
@@ -69,9 +97,9 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
      */
     public function primeUpdates($apiKey)
     {
-        // if (!$this->init($apiKey, 'primeUpdates')) {
-        //     return $this->getAuthErrorResult();
-        // }
+        if (!$this->init($apiKey, 'primeUpdates')) {
+            return $this->getAuthErrorResult();
+        }
 
         $row = $this->backend->doPrimeUpdates();
         return $this->getSuccessResult($row);
@@ -84,9 +112,9 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
      */
     public function confirmQueueMessage($apiKey, $messageId)
     {
-        // if (!$this->init($apiKey, 'confirmQueueMessage')) {
-        //     return $this->getAuthErrorResult();
-        // }
+        if (!$this->init($apiKey, 'confirmQueueMessage')) {
+            return $this->getAuthErrorResult();
+        }
 
         $result = $this->backend->doConfirmQueueMessage($messageId);
         if ($result) {

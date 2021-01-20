@@ -70,7 +70,7 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
         $columnToInsert = 'modified';
 
         // Add default messages for the tables, this will appear if tables are already created.
-        $result =[];
+        $result = [];
         $result[$civicrmTimesheetEver] = "{$civicrmTimesheetEver} table is already created.";
         $result[$civicrmQueue] = "{$civicrmQueue} table is already created.";
         $result[$timeSheetTable] = "{$timeSheetTable} table has already a `modified` column.";
@@ -127,25 +127,6 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
 
         return $result;
     }
-
-    /**
-     * This custom function will check if column is already exist in a table
-     * @param $tableName
-     * @param $columnName
-     * @return array
-     */
-    public function checkColumnExist($tableName, $columnName)
-    {
-        $query = $query = "SELECT COLUMN_NAME
-                FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE table_name = '$tableName'
-                AND column_name LIKE '$columnName'";
-
-        $this->conn->Query($query);
-
-        return $this->conn->RowArray(0, MYSQLI_ASSOC);
-    }
-
 
     /**
      * Create custom table and return success or fail message
@@ -215,6 +196,24 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
     }
 
     /**
+     * This custom function will check if column is already exist in a table
+     * @param $tableName
+     * @param $columnName
+     * @return array
+     */
+    public function checkColumnExist($tableName, $columnName)
+    {
+        $query = $query = "SELECT COLUMN_NAME
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE table_name = '$tableName'
+                AND column_name LIKE '$columnName'";
+
+        $this->conn->Query($query);
+
+        return $this->conn->RowArray(0, MYSQLI_ASSOC);
+    }
+
+    /**
      * Add a column in an existing table and return success or fail message
      * @param $tableName
      * @param $columnName
@@ -268,18 +267,6 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
     }
 
     /**
-     * Check if server_prefix_civicrm_timesheet_ever has a value in its column
-     * @return array
-     */
-    public function checkCivicrmTimesheetEverData()
-    {
-        $queryCheck = "SELECT * FROM {$this->getCivicrmTimesheetEver()}";
-        $this->conn->Query($queryCheck);
-
-        return $this->conn->RowArray(0, MYSQLI_ASSOC);
-    }
-
-    /**
      * Queued newly created timesheet in server_prefix_civicrm_queue
      * @param $queueCutoff
      */
@@ -326,7 +313,20 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
         return $queuedData;
     }
 
-    public function doConfirmQueueMessage($queuedID) {
+    /**
+     * Check if server_prefix_civicrm_timesheet_ever has a value in its column
+     * @return array
+     */
+    public function checkCivicrmTimesheetEverData()
+    {
+        $queryCheck = "SELECT * FROM {$this->getCivicrmTimesheetEver()}";
+        $this->conn->Query($queryCheck);
+
+        return $this->conn->RowArray(0, MYSQLI_ASSOC);
+    }
+
+    public function doConfirmQueueMessage($queuedID)
+    {
         $queuedDataQuery = "SELECT * FROM `{$this->getCivicrmQueue()}` WHERE `id` = {$queuedID}";
         $this->conn->Query($queuedDataQuery);
         $checkQueuedData = $this->conn->RowArray(0, MYSQLI_ASSOC);
