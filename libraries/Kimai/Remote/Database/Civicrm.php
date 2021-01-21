@@ -341,4 +341,16 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
 
         return $message;
     }
+
+    /**
+     * Get all activity list
+     * @return array activities data
+     */
+    public function doGetActivities()
+    {
+        $query = "SELECT activityID, name FROM {$this->getActivityTable()}";
+        $this->conn->Query($query);
+
+        return $this->conn->RecordsArray(MYSQLI_ASSOC);
+    }
 }

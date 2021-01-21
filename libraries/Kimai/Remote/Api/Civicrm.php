@@ -124,4 +124,18 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
         return $this->getErrorResult('ERROR: Invalid ID');
     }
 
+    /**
+     * Get all list of activity.
+     * @param type $apiKey
+     */
+    public function getActivities($apiKey)
+    {
+        if (!$this->init($apiKey, 'getActivities')) {
+            return $this->getAuthErrorResult();
+        }
+
+        $row = $this->backend->doGetActivities();
+        return $this->getSuccessResult($row);
+    }
+
 }
