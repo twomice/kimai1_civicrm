@@ -42,6 +42,12 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
     private $conn = null;
 
     /**
+     * Array of parameters to define behavior of current api call.
+     * @var Array
+     */
+    var $sessionParams = [];
+
+    /**
      * Kimai_Remote_Database constructor.
      * @param Kimai_Config $kga
      * @param Kimai_Database_Mysql $database
@@ -236,7 +242,7 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
      * Update server_prefix_civicrm_timesheet_ever to the changes in server_prefix_timesheet
      * @return array Output of getQueuedData().
      */
-    public function doGetUpdates($limit)
+    public function doGetUpdates()
     {
         // Copy all data in server_prefix_timesheet to server_prefix_civicrm_timesheet_ever if there is no value
         $query = "INSERT IGNORE INTO {$this->getCivicrmTimesheetEver()} (timeEntryID) SELECT timeEntryID FROM {$this->getTimeSheetTable()}";
@@ -263,7 +269,7 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
         // Add deleted data to server_prefix_civicrm_queue and delete it in server_prefix_civicrm_timesheet_ever
         $this->addQueueDeletedTimesheet($queueCutoff['queueCutoff']);
 
-        return $this->getQueuedData($limit);
+        return $this->getQueuedData();
     }
 
     /**
@@ -299,8 +305,9 @@ class Kimai_Remote_Database_Civicrm extends Kimai_Remote_Database
      * @param $queueCutoff
      * @return array of queued timesheet
      */
-    public function getQueuedData($limit)
+    public function getQueuedData()
     {
+        $limit = $this->sessionParams['limit'] ?? 25;
         $query = "SELECT * FROM `{$this->getCivicrmQueue()}` WHERE `confirmed` IS NULL ORDER BY modified DESC LIMIT {$limit}";
         $this->conn->Query($query);
         $queuedData['queued_data'] = $this->conn->RecordsArray(MYSQLI_ASSOC);

@@ -87,7 +87,8 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
             return $this->getAuthErrorResult();
         }
 
-        $row = $this->backend->doGetUpdates($limit);
+        $this->backend->sessionParams['limit'] = $limit;
+        $row = $this->backend->doGetUpdates();
         return $this->getSuccessResult($row);
     }
 
