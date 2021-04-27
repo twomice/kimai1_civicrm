@@ -79,15 +79,17 @@ class Kimai_Remote_Api_Civicrm extends Kimai_Remote_Api
     /**
      *
      * @param type $apiKey
+     * @param type $projectId
      * @param type $limit Maximum number of returned queue messages.
      */
-    public function getUpdates($apiKey, $limit = 25)
+    public function getUpdates($apiKey, $projectId, $limit = 25)
     {
         if (!$this->init($apiKey, 'getUpdates')) {
             return $this->getAuthErrorResult();
         }
 
         $this->backend->sessionParams['limit'] = $limit;
+        $this->backend->sessionParams['projectId'] = $projectId;
         $row = $this->backend->doGetUpdates();
         return $this->getSuccessResult($row);
     }
